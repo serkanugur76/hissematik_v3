@@ -12,9 +12,7 @@
         .navbar { background-color: var(--dark) !important; border-bottom: 3px solid var(--primary); }
         .stock-card { border: none; border-radius: 16px; transition: all 0.3s ease; background: var(--card); }
         .stock-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .indicator-badge { background: #f8f9fb; border-radius: 10px; padding: 10px; text-align: center; border: 1px solid #eee; }
         .ai-box { background: var(--dark); color: #adbac7; border-radius: 12px; padding: 15px; border-left: 5px solid var(--primary); }
-        .signal-badge { font-size: 0.8rem; padding: 6px 12px; border-radius: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -35,119 +33,86 @@
             <span><i class="fas fa-circle text-success me-1" style="font-size: 8px;"></i> Sistem Aktif</span>
         </div>
     </div>
-
     <div id="hisse-listesi" class="row g-4">
-        <div class="col-12 text-center py-5">
-            <h4 class="text-muted">Başlamak için "Verileri Güncelle" butonuna basın.</h4>
-            <p class="text-muted small">Cloudflare Worker üzerinden canlı veriler çekilecektir.</p>
         </div>
-    </div>
 </div>
 
-<script type="module">
-        // --- AYARLAR ---
-        // Senin Worker linkini buraya tam olarak yapıştırdım
-        const WORKER_URL = 'https://hissematik-proxy.serkanugur.workers.dev/'; 
+<script>
+    // SENİN ÇALIŞAN WORKER LİNKİN
+    const WORKER_URL = 'https://hissematik-proxy.serkanugur.workers.dev/'; 
+    
+    // İzlenecek hisse listesi
+    const hisseler = ['THYAO', 'EREGL', 'ASELS', 'SISE', 'BIMAS', 'EKGYO'];
+
+    async function verileriGetir() {
+        const btn = document.getElementById('update-btn');
+        const container = document.getElementById('hisse-listesi');
         
-        const state = {
-            hisseler: ['THYAO', 'EREGL', 'ASELS', 'SISE', 'BIMAS', 'EKGYO'], // .IS takısını Worker ekliyor
-            veriler: []
-        };
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>GÜNCELLENİYOR...';
+        container.innerHTML = ''; // Eski kartları temizle
 
-        const ui = {
-            render() {
-                const container = document.getElementById('hisse-listesi');
-                if (state.veriler.length === 0) return;
+        for (let s of hisseler) {
+            try {
+                // Worker'a symbol parametresi ile istek atıyoruz
+                const response = await fetch(`${WORKER_URL}?symbol=${s}`);
+                const d = await response.json();
 
-                container.innerHTML = state.veriler.map(h => `
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 stock-card shadow-sm">
-                            <div class="card-body p-4">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h4 class="fw-bold mb-0">${h.symbol}</h4>
-                                    <span class="badge ${h.rsi < 35 ? 'bg-success' : (h.rsi > 65 ? 'bg-danger' : 'bg-secondary')} p-2">
-                                        ${h.rsi < 35 ? 'AL' : (h.rsi > 65 ? 'SAT' : 'TUT')}
-                                    </span>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-end mb-4">
-                                    <div>
-                                        <span class="h2 fw-bold mb-0">${h.price.toFixed(2)}</span>
-                                        <span class="small text-muted">TL</span>
-                                    </div>
-                                    <div class="text-end fw-bold ${h.change >= 0 ? 'text-success' : 'text-danger'}">
-                                        ${h.change >= 0 ? '▲' : '▼'} %${Math.abs(h.change).toFixed(2)}
-                                    </div>
-                                </div>
-                                <div class="row g-2 mb-4 text-center">
-                                    <div class="col-6"><div class="p-2 border rounded bg-light small text-muted">RSI (14)<br><b class="text-dark">${h.rsi.toFixed(1)}</b></div></div>
-                                    <div class="col-6"><div class="p-2 border rounded bg-light small text-muted">DEĞİŞİM<br><b class="text-dark">%${h.change.toFixed(2)}</b></div></div>
-                                </div>
-                                <div class="ai-box p-3 rounded bg-dark text-light" style="font-size:0.85rem; border-left: 4px solid #0d6efd;">
-                                    <i class="fas fa-robot text-info me-1"></i> <b>STRATEJİ:</b><br>
-                                    ${h.rsi < 35 ? 'Aşırı satım bölgesinde. Tepki alımları gelebilir.' : (h.rsi > 65 ? 'Aşırı alım seviyesi. Kar satışı görülebilir.' : 'Nötr bölge. Mevcut trend korunuyor.')}
-                                </div>
+                if (d.error) throw new Error(d.error);
+
+                // Kart tasarımını ekrana basıyoruz
+                container.innerHTML += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 stock-card shadow-sm p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="fw-bold mb-0">${s}</h4>
+                            <span class="badge ${d.rsi < 35 ? 'bg-success' : (d.rsi > 65 ? 'bg-danger' : 'bg-secondary')} p-2">
+                                ${d.rsi < 35 ? 'AL' : (d.rsi > 65 ? 'SAT' : 'TUT')}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-end mb-4">
+                            <div>
+                                <span class="h2 fw-bold mb-0">${d.price.toFixed(2)}</span>
+                                <span class="small text-muted">TL</span>
+                            </div>
+                            <div class="text-end fw-bold ${d.change >= 0 ? 'text-success' : 'text-danger'}">
+                                ${d.change >= 0 ? '▲' : '▼'} %${Math.abs(d.change).toFixed(2)}
                             </div>
                         </div>
+                        <div class="row g-2 mb-4 text-center">
+                            <div class="col-6"><div class="p-2 border rounded bg-light small text-muted">RSI (14)<br><b class="text-dark">${d.rsi.toFixed(1)}</b></div></div>
+                            <div class="col-6"><div class="p-2 border rounded bg-light small text-muted">MACD<br><b class="text-dark">Sinyal Bekleniyor</b></div></div>
+                        </div>
+                        <div class="ai-box">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-robot text-info me-2"></i>
+                                <span class="small fw-bold text-info">AI STRATEJİ ANALİZİ</span>
+                            </div>
+                            <p class="small mb-0 opacity-75">
+                                ${d.rsi < 35 ? 'Hisse aşırı satım bölgesinde, teknik bir tepki yükselişi gelebilir.' : 
+                                  d.rsi > 65 ? 'Hisse aşırı alım bölgesinde, kar satışlarına karşı dikkatli olunmalı.' : 
+                                  'Teknik göstergeler nötr bölgede. Yatay seyir korunabilir.'}
+                            </p>
+                        </div>
                     </div>
-                `).join('');
-            }
-        };
-
-        async function updateData() {
-            const btn = document.getElementById('update-btn');
-            btn.disabled = true;
-            btn.innerHTML = 'Güncelleniyor...';
-
-            try {
-                // Senin Worker'ın beklediği format: ?semboller=THYAO,EREGL...
-                const sembolListesi = state.hisseler.join(',');
-                const response = await fetch(`${WORKER_URL}?semboller=${sembolListesi}`);
-                const allData = await response.json();
-
-                const tempVeriler = [];
-
-                for (const s of state.hisseler) {
-                    const stock = allData[s];
-                    if (stock && stock.chart && stock.chart.result) {
-                        const res = stock.chart.result[0];
-                        const price = res.meta.regularMarketPrice;
-                        const prevClose = res.meta.previousClose;
-                        const closes = res.indicators.quote[0].close.filter(p => p != null);
-                        
-                        // Basit RSI Hesaplama
-                        let rsi = 50;
-                        if (closes.length > 14) {
-                            let gains = 0, losses = 0;
-                            for (let i = closes.length - 14; i < closes.length; i++) {
-                                const diff = closes[i] - closes[i-1];
-                                if (diff > 0) gains += diff; else losses -= diff;
-                            }
-                            rsi = 100 - (100 / (1 + (gains / losses)));
-                        }
-
-                        tempVeriler.push({
-                            symbol: s,
-                            price: price,
-                            change: ((price - prevClose) / prevClose) * 100,
-                            rsi: rsi
-                        });
-                    }
-                }
-
-                state.veriler = tempVeriler;
-                ui.render();
-                document.getElementById('last-update').innerText = new Date().toLocaleTimeString();
+                </div>`;
 
             } catch (err) {
-                console.error("Hata:", err);
-                alert("Veriler alınamadı. Worker linkini veya internetini kontrol et.");
+                console.error(s + " hatası:", err);
             }
-
-            btn.disabled = false;
-            btn.innerHTML = 'VERİLERİ GÜNCELLE';
         }
 
-        document.getElementById('update-btn').addEventListener('click', updateData);
-    </script>
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync-alt me-2"></i> VERİLERİ GÜNCELLE';
+        document.getElementById('last-update').innerText = new Date().toLocaleTimeString();
+    }
+
+    // Butona basınca çalıştır
+    document.getElementById('update-btn').addEventListener('click', verileriGetir);
+    
+    // Sayfa açılınca otomatik bir kere çalıştır
+    window.onload = verileriGetir;
+</script>
+
 </body>
 </html>
