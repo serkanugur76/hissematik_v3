@@ -8,12 +8,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --bg: #f4f7fa; --card: #ffffff; --dark: #1a1d21; --primary: #0d6efd; }
-        body { background-color: var(--bg); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; }
         .navbar { background-color: var(--dark) !important; border-bottom: 3px solid var(--primary); }
-        .stock-card { border: none; border-radius: 16px; transition: all 0.3s ease; background: var(--card); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .stock-card { border: none; border-radius: 16px; transition: 0.3s ease; background: var(--card); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .stock-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         .ai-box { background: #1e2227; color: #adbac7; border-radius: 12px; padding: 15px; border-left: 5px solid var(--primary); font-size: 0.85rem; }
-        .indicator-val { font-weight: bold; color: var(--dark); }
     </style>
 </head>
 <body>
@@ -21,27 +20,25 @@
 <nav class="navbar navbar-dark mb-4 shadow">
     <div class="container">
         <span class="navbar-brand fw-bold"><i class="fas fa-chart-line me-2"></i>HİSSEMATİK <span class="text-primary">PRO</span></span>
-        <button id="update-btn" class="btn btn-primary px-4 fw-bold" onclick="verileriGuncelle()">
+        <button id="update-btn" class="btn btn-primary px-4 fw-bold">
             <i class="fas fa-sync-alt me-2"></i> VERİLERİ GÜNCELLE
         </button>
     </div>
 </nav>
 
 <div class="container">
-    <div class="row mb-4 text-muted small">
-        <div class="col-12 d-flex justify-content-between px-3">
-            <span><i class="far fa-clock me-1"></i> Durum: <span id="status-text" class="text-success">Sistem Hazır</span></span>
-            <span>Son Güncelleme: <span id="last-update">-</span></span>
-        </div>
+    <div class="row mb-4 text-muted small px-3">
+        <div class="col-6">Durum: <span id="status-text" class="text-success fw-bold">Sistem Hazır</span></div>
+        <div class="col-6 text-end">Son Güncelleme: <span id="last-update">-</span></div>
     </div>
     <div id="hisse-listesi" class="row g-4">
         </div>
 </div>
 
 <script>
-    // SENİN TAM VE DOĞRU LİNKİN (Üç noktasız hali)
-    const WORKER_URL = 'https://hissematik-proxy.serkanugur76.workers.dev/'; 
-    const hisseListesi = ['THYAO', 'EREGL', 'ASELS', 'SISE', 'BIMAS', 'EKGYO'];
+    // VERDİĞİN GERÇEK LİNK
+    const WORKER_URL = 'https://hissematik-proxy.ugurserkan.workers.dev/'; 
+    const hisseler = ['THYAO', 'EREGL', 'ASELS', 'SISE', 'BIMAS', 'EKGYO'];
 
     async function verileriGuncelle() {
         const btn = document.getElementById('update-btn');
@@ -49,17 +46,15 @@
         const status = document.getElementById('status-text');
 
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>YÜKLENİYOR...';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>GÜNCELLENİYOR...';
         status.innerText = 'Veriler çekiliyor...';
         container.innerHTML = ''; 
 
-        for (let s of hisseListesi) {
+        for (let s of hisseler) {
             try {
-                // Senin worker'ına sembolü gönderiyoruz
+                // Link + parametre birleşimi
                 const response = await fetch(`${WORKER_URL}?symbol=${s}`);
                 const d = await response.json();
-
-                if (d.error) throw new Error(d.error);
 
                 container.innerHTML += `
                 <div class="col-md-6 col-lg-4">
@@ -73,33 +68,31 @@
                         <div class="d-flex justify-content-between align-items-end mb-4">
                             <div>
                                 <span class="h2 fw-bold mb-0">${d.price.toFixed(2)}</span>
-                                <span class="small text-muted text-uppercase"> tl</span>
+                                <span class="small text-muted"> TL</span>
                             </div>
                             <div class="text-end fw-bold ${d.change >= 0 ? 'text-success' : 'text-danger'}">
                                 ${d.change >= 0 ? '▲' : '▼'} %${Math.abs(d.change).toFixed(2)}
                             </div>
                         </div>
                         <div class="row g-2 mb-4 text-center">
-                            <div class="col-6"><div class="p-2 border rounded bg-light small">RSI (14)<br><span class="indicator-val">${d.rsi.toFixed(1)}</span></div></div>
-                            <div class="col-6"><div class="p-2 border rounded bg-light small">TREND<br><span class="indicator-val">${d.change >= 0 ? 'Pozitif' : 'Negatif'}</span></div></div>
+                            <div class="col-6"><div class="p-2 border rounded bg-light small text-muted">RSI (14)<br><b class="text-dark">${d.rsi.toFixed(1)}</b></div></div>
+                            <div class="col-6"><div class="p-2 border rounded bg-light small text-muted">TREND<br><b class="text-dark">${d.change >= 0 ? 'Yukarı' : 'Aşağı'}</b></div></div>
                         </div>
                         <div class="ai-box">
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="fas fa-robot text-info me-2"></i>
-                                <span class="small fw-bold text-info text-uppercase">AI Analiz Notu</span>
+                            <div class="d-flex align-items-center mb-2 text-info">
+                                <i class="fas fa-robot me-2"></i><b>AI ANALİZ</b>
                             </div>
                             <p class="small mb-0">
-                                ${d.rsi < 35 ? 'Hisse teknik olarak dipte. Alım iştahı artabilir.' : 
-                                  d.rsi > 65 ? 'Hisse doygunluğa ulaştı, düzeltme beklenebilir.' : 
-                                  'Trend dengeli, önemli bir kırılım bekleniyor.'}
+                                ${d.rsi < 35 ? 'Fiyat aşırı satım bölgesinde, teknik tepki gelebilir.' : 
+                                  d.rsi > 65 ? 'Göstergeler şişmiş durumda, dikkatli olunmalı.' : 
+                                  'Piyasa dengeli, yatay hareket devam edebilir.'}
                             </p>
                         </div>
                     </div>
                 </div>`;
 
             } catch (err) {
-                console.error(s + " Hatası:", err);
-                container.innerHTML += `<div class="col-md-4"><div class="alert alert-danger">${s} verisi alınamadı!</div></div>`;
+                console.error(s + " hatası:", err);
             }
         }
 
@@ -109,7 +102,10 @@
         document.getElementById('last-update').innerText = new Date().toLocaleTimeString();
     }
 
-    // Sayfa açıldığında otomatik çalıştır
+    // Buton bağlantısı
+    document.getElementById('update-btn').addEventListener('click', verileriGuncelle);
+    
+    // Sayfa açılınca otomatik başlat
     window.onload = verileriGuncelle;
 </script>
 
