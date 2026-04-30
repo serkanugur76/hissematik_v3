@@ -2,127 +2,43 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HisseMatik Pro | Canlı Veri</title>
+    <title>HisseMatik</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --bg: #f4f7fa; --card: #ffffff; --dark: #1a1d21; --primary: #0d6efd; }
-        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; color: #2d3436; }
-        .navbar { background-color: var(--dark) !important; border-bottom: 3px solid var(--primary); }
-        .stock-card { border: none; border-radius: 16px; transition: all 0.3s ease; background: var(--card); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .stock-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .ai-box { background: #1e2227; color: #adbac7; border-radius: 12px; padding: 15px; border-left: 5px solid var(--primary); font-size: 0.85rem; }
-        .badge-al { background-color: #27ae60; }
-        .badge-sat { background-color: #e74c3c; }
-        .badge-tut { background-color: #95a5a6; }
-    </style>
 </head>
-<body>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark mb-4">
+        <div class="container">
+            <span class="navbar-brand">HİSSEMATİK TEST</span>
+            <button onclick="testEt()" class="btn btn-primary">VERİLERİ ÇEK</button>
+        </div>
+    </nav>
 
-<nav class="navbar navbar-dark mb-4 shadow">
     <div class="container">
-        <span class="navbar-brand fw-bold"><i class="fas fa-chart-line me-2"></i>HİSSEMATİK <span class="text-primary">PRO</span></span>
-        <button id="update-btn" class="btn btn-primary px-4 fw-bold" onclick="verileriGuncelle()">
-            <i class="fas fa-sync-alt me-2"></i> VERİLERİ GÜNCELLE
-        </button>
-    </div>
-</nav>
-
-<div class="container">
-    <div class="row mb-4 text-muted small px-3">
-        <div class="col-6">Durum: <span id="status-text" class="text-success fw-bold">Sistem Aktif</span></div>
-        <div class="col-6 text-end">Son Güncelleme: <span id="last-update">-</span></div>
-    </div>
-    
-    <div id="hisse-listesi" class="row g-4">
-        <div class="text-center mt-5">
-            <div class="spinner-border text-primary" role="status"></div>
-            <p class="mt-2 text-muted">Veriler hazırlanıyor...</p>
+        <div id="sonuc" class="row g-3">
+            <p class="text-center">Butona basarak testi başlatın.</p>
         </div>
     </div>
-</div>
 
-<script>
-    // SENİN DOĞRULADIĞIMIZ WORKER LİNKİN
-    const WORKER_URL = 'https://hissematik-proxy.ugurserkan.workers.dev/'; 
-    
-    // İzlemek istediğin hisseler
-    const hisseler = ['THYAO', 'EREGL', 'ASELS', 'SISE', 'BIMAS', 'EKGYO'];
-
-    async function verileriGuncelle() {
-        const btn = document.getElementById('update-btn');
-        const container = document.getElementById('hisse-listesi');
-        const status = document.getElementById('status-text');
-
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>YÜKLENİYOR...';
-        status.innerText = 'Veriler çekiliyor...';
-
-        let htmlContent = '';
-
-        for (let s of hisseler) {
-            try {
-                // Worker'dan veriyi çekiyoruz
-                const response = await fetch(`${WORKER_URL}?symbol=${s}`);
-                const d = await response.json();
-
-                // Eğer veri gelmişse kartı oluştur
-                if (d && d.price) {
-                    const rsiStatus = d.rsi < 35 ? 'AL' : (d.rsi > 65 ? 'SAT' : 'TUT');
-                    const rsiClass = d.rsi < 35 ? 'badge-al' : (d.rsi > 65 ? 'badge-sat' : 'badge-tut');
-
-                    htmlContent += `
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 stock-card p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h4 class="fw-bold mb-0">${s}</h4>
-                                <span class="badge ${rsiClass} p-2">${rsiStatus} SİNYALİ</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-end mb-4">
-                                <div>
-                                    <span class="h2 fw-bold mb-0">${d.price.toFixed(2)}</span>
-                                    <span class="small text-muted"> TL</span>
-                                </div>
-                                <div class="text-end fw-bold ${d.change >= 0 ? 'text-success' : 'text-danger'}">
-                                    ${d.change >= 0 ? '▲' : '▼'} %${Math.abs(d.change).toFixed(2)}
-                                </div>
-                            </div>
-                            <div class="row g-2 mb-4 text-center">
-                                <div class="col-6"><div class="p-2 border rounded bg-light small text-muted">RSI (14)<br><b class="text-dark">${d.rsi.toFixed(1)}</b></div></div>
-                                <div class="col-6"><div class="p-2 border rounded bg-light small text-muted">TREND<br><b class="text-dark">${d.change >= 0 ? 'YUKARI' : 'AŞAĞI'}</b></div></div>
-                            </div>
-                            <div class="ai-box">
-                                <div class="d-flex align-items-center mb-2 text-info">
-                                    <i class="fas fa-robot me-2"></i><b>AI ANALİZ NOTU</b>
-                                </div>
-                                <p class="small mb-0">
-                                    ${d.rsi < 35 ? 'Hisse teknik olarak dipte. Kademeli alım düşünülebilir.' : 
-                                      d.rsi > 65 ? 'Hisse aşırı alım bölgesinde. Kar satışı görülebilir.' : 
-                                      'Trend şu an nötr. Destek ve direnç seviyeleri izlenmeli.'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>`;
-                }
-            } catch (err) {
-                console.error(s + " Hatası:", err);
+    <script>
+        async function testEt() {
+            const res = await fetch('https://hissematik-proxy.ugurserkan.workers.dev/?symbol=THYAO');
+            const data = await res.json();
+            const container = document.getElementById('sonuc');
+            
+            // Eğer data.price varsa kartı bas, yoksa hatayı bas
+            if(data.price) {
+                container.innerHTML = `
+                <div class="col-md-4">
+                    <div class="card p-4 shadow-sm">
+                        <h3>THYAO</h3>
+                        <h2 class="text-primary">${data.price.toFixed(2)} TL</h2>
+                        <p>RSI: ${data.rsi ? data.rsi.toFixed(2) : 'Hesaplanamadı'}</p>
+                    </div>
+                </div>`;
+            } else {
+                container.innerHTML = `<div class="alert alert-danger">Worker çalışıyor ama Yahoo veri göndermiyor: ${JSON.stringify(data)}</div>`;
             }
         }
-
-        // Kartları ekrana bas
-        container.innerHTML = htmlContent || '<div class="alert alert-warning">Veriler alınamadı. Worker linkini kontrol edin.</div>';
-        
-        // Arayüzü güncelle
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-sync-alt me-2"></i> VERİLERİ GÜNCELLE';
-        status.innerText = 'Güncellendi';
-        document.getElementById('last-update').innerText = new Date().toLocaleTimeString();
-    }
-
-    // Sayfa açılır açılmaz verileri getir
-    window.onload = verileriGuncelle;
-</script>
-
+    </script>
 </body>
 </html>
