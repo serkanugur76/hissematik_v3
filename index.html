@@ -45,120 +45,109 @@
 </div>
 
 <script type="module">
-    // --- KONTROL PANELİ ---
-    // BURAYA CLOUDFLARE WORKER LINKINI YAPIŞTIR
-    const WORKER_URL = 'https://hissematik-proxy.serkanugur.workers.dev/'; 
-    
-    const state = {
-        hisseler: ['THYAO.IS', 'EREGL.IS', 'ASELS.IS', 'SISE.IS', 'BIMAS.IS', 'EKGYO.IS'],
-        veriler: []
-    };
+        // --- AYARLAR ---
+        // Senin Worker linkini buraya tam olarak yapıştırdım
+        const WORKER_URL = 'https://hissematik-proxy.serkanugur.workers.dev/'; 
+        
+        const state = {
+            hisseler: ['THYAO', 'EREGL', 'ASELS', 'SISE', 'BIMAS', 'EKGYO'], // .IS takısını Worker ekliyor
+            veriler: []
+        };
 
-    const ui = {
-        render() {
-            const container = document.getElementById('hisse-listesi');
-            if (state.veriler.length === 0) return;
+        const ui = {
+            render() {
+                const container = document.getElementById('hisse-listesi');
+                if (state.veriler.length === 0) return;
 
-            container.innerHTML = state.veriler.map(h => {
-                // Sinyal Rengi Belirleme
-                let signalColor = 'bg-secondary';
-                if (h.rsi < 35) signalColor = 'bg-success';
-                else if (h.rsi > 65) signalColor = 'bg-danger';
-
-                return `
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100 stock-card shadow-sm">
-                        <div class="card-body p-4">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h4 class="fw-bold mb-0">${h.symbol}</h4>
-                                <span class="badge signal-badge ${signalColor}">${h.rsi < 35 ? 'AL' : (h.rsi > 65 ? 'SAT' : 'TUT')}</span>
-                            </div>
-                            
-                            <div class="d-flex justify-content-between align-items-end mb-4">
-                                <div>
-                                    <span class="h2 fw-bold mb-0">${h.price.toFixed(2)}</span>
-                                    <span class="small text-muted">TL</span>
-                                </div>
-                                <div class="text-end">
-                                    <span class="fw-bold ${h.change >= 0 ? 'text-success' : 'text-danger'}">
-                                        ${h.change >= 0 ? '▲' : '▼'} %${Math.abs(h.change).toFixed(2)}
+                container.innerHTML = state.veriler.map(h => `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 stock-card shadow-sm">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h4 class="fw-bold mb-0">${h.symbol}</h4>
+                                    <span class="badge ${h.rsi < 35 ? 'bg-success' : (h.rsi > 65 ? 'bg-danger' : 'bg-secondary')} p-2">
+                                        ${h.rsi < 35 ? 'AL' : (h.rsi > 65 ? 'SAT' : 'TUT')}
                                     </span>
                                 </div>
-                            </div>
-
-                            <div class="row g-2 mb-4">
-                                <div class="col-6">
-                                    <div class="indicator-badge">
-                                        <small class="text-muted d-block">RSI (14)</small>
-                                        <span class="fw-bold">${h.rsi.toFixed(1)}</span>
+                                <div class="d-flex justify-content-between align-items-end mb-4">
+                                    <div>
+                                        <span class="h2 fw-bold mb-0">${h.price.toFixed(2)}</span>
+                                        <span class="small text-muted">TL</span>
+                                    </div>
+                                    <div class="text-end fw-bold ${h.change >= 0 ? 'text-success' : 'text-danger'}">
+                                        ${h.change >= 0 ? '▲' : '▼'} %${Math.abs(h.change).toFixed(2)}
                                     </div>
                                 </div>
-                                <div class="col-6">
-                                    <div class="indicator-badge">
-                                        <small class="text-muted d-block">MACD</small>
-                                        <span class="fw-bold text-primary">${h.macd.toFixed(2)}</span>
-                                    </div>
+                                <div class="row g-2 mb-4 text-center">
+                                    <div class="col-6"><div class="p-2 border rounded bg-light small text-muted">RSI (14)<br><b class="text-dark">${h.rsi.toFixed(1)}</b></div></div>
+                                    <div class="col-6"><div class="p-2 border rounded bg-light small text-muted">DEĞİŞİM<br><b class="text-dark">%${h.change.toFixed(2)}</b></div></div>
                                 </div>
-                            </div>
-
-                            <div class="ai-box">
-                                <div class="d-flex align-items-center mb-2">
-                                    <i class="fas fa-robot text-info me-2"></i>
-                                    <span class="small fw-bold text-info">AI STRATEJİ ANALİZİ</span>
+                                <div class="ai-box p-3 rounded bg-dark text-light" style="font-size:0.85rem; border-left: 4px solid #0d6efd;">
+                                    <i class="fas fa-robot text-info me-1"></i> <b>STRATEJİ:</b><br>
+                                    ${h.rsi < 35 ? 'Aşırı satım bölgesinde. Tepki alımları gelebilir.' : (h.rsi > 65 ? 'Aşırı alım seviyesi. Kar satışı görülebilir.' : 'Nötr bölge. Mevcut trend korunuyor.')}
                                 </div>
-                                <p class="small mb-0 opacity-75" style="line-height: 1.4;">
-                                    ${this.generateAINote(h)}
-                                </p>
                             </div>
                         </div>
                     </div>
-                </div>`;
-            }).join('');
-        },
-
-        generateAINote(h) {
-            if (h.rsi < 35) return `${h.symbol} aşırı satım bölgesinde. RSI verisi dip seviyelerden dönüş sinyali veriyor olabilir. Kademeli alım düşünülebilir.`;
-            if (h.rsi > 65) return `${h.symbol} aşırı alım bölgesine girmiş durumda. RSI şişkinlik gösteriyor, kar satışlarına karşı temkinli olunmalı.`;
-            if (h.change > 2) return `Kuvvetli yükseliş trendi izleniyor. Momentum pozitif ancak direnç seviyelerine dikkat edilmeli.`;
-            return `Yatay seyir hakim. Teknik göstergeler nötr bölgede kalmaya devam ediyor. Belirgin bir trend oluşumu beklenmeli.`;
-        }
-    };
-
-    async function startUpdate() {
-        const btn = document.getElementById('update-btn');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>GÜNCELLENİYOR...';
-
-        const fetchedData = [];
-
-        for (const s of state.hisseler) {
-            try {
-                const response = await fetch(`${WORKER_URL}?symbol=${s}`);
-                if (response.ok) {
-                    const d = await response.json();
-                    fetchedData.push({
-                        symbol: s,
-                        price: d.price || 0,
-                        change: d.changePercent || 0,
-                        rsi: d.rsi || 50,
-                        macd: d.macd || 0
-                    });
-                }
-            } catch (err) {
-                console.error(s + " Hatası:", err);
+                `).join('');
             }
+        };
+
+        async function updateData() {
+            const btn = document.getElementById('update-btn');
+            btn.disabled = true;
+            btn.innerHTML = 'Güncelleniyor...';
+
+            try {
+                // Senin Worker'ın beklediği format: ?semboller=THYAO,EREGL...
+                const sembolListesi = state.hisseler.join(',');
+                const response = await fetch(`${WORKER_URL}?semboller=${sembolListesi}`);
+                const allData = await response.json();
+
+                const tempVeriler = [];
+
+                for (const s of state.hisseler) {
+                    const stock = allData[s];
+                    if (stock && stock.chart && stock.chart.result) {
+                        const res = stock.chart.result[0];
+                        const price = res.meta.regularMarketPrice;
+                        const prevClose = res.meta.previousClose;
+                        const closes = res.indicators.quote[0].close.filter(p => p != null);
+                        
+                        // Basit RSI Hesaplama
+                        let rsi = 50;
+                        if (closes.length > 14) {
+                            let gains = 0, losses = 0;
+                            for (let i = closes.length - 14; i < closes.length; i++) {
+                                const diff = closes[i] - closes[i-1];
+                                if (diff > 0) gains += diff; else losses -= diff;
+                            }
+                            rsi = 100 - (100 / (1 + (gains / losses)));
+                        }
+
+                        tempVeriler.push({
+                            symbol: s,
+                            price: price,
+                            change: ((price - prevClose) / prevClose) * 100,
+                            rsi: rsi
+                        });
+                    }
+                }
+
+                state.veriler = tempVeriler;
+                ui.render();
+                document.getElementById('last-update').innerText = new Date().toLocaleTimeString();
+
+            } catch (err) {
+                console.error("Hata:", err);
+                alert("Veriler alınamadı. Worker linkini veya internetini kontrol et.");
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = 'VERİLERİ GÜNCELLE';
         }
 
-        state.veriler = fetchedData;
-        ui.render();
-        
-        document.getElementById('last-update').innerText = new Date().toLocaleTimeString();
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-sync-alt me-2"></i> VERİLERİ GÜNCELLE';
-    }
-
-    document.getElementById('update-btn').addEventListener('click', startUpdate);
-</script>
-
+        document.getElementById('update-btn').addEventListener('click', updateData);
+    </script>
 </body>
 </html>
